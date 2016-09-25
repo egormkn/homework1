@@ -1,6 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#3F51B5</color>
-    <color name="colorPrimaryDark">#303F9F</color>
-    <color name="colorAccent">#FF4081</color>
+
+    <color name="colorPrimary">#32c5e9</color>
+    <color name="textPrimary">#ffffff</color>
+    <color name="colorPrimaryDark">#32c5e9</color>
+    <color name="colorAccent">#2b3445</color>
+
+    <color name="buttonBackground">@android:color/transparent</color>
+    <color name="buttonBorder">#394150</color>
+    <color name="buttonPressedBackground">#1c202b</color>
+    <color name="buttonPressedBorder">#394150</color>
+
+    <color name="buttonGreenBackground">#74db70</color>
+    <color name="buttonGreenPressedBackground">#45d23e</color>
+
+    <color name="buttonOrangeBackground">#f7a629</color>
+    <color name="buttonOrangePressedBackground">#c98005</color>
+
 </resources>
