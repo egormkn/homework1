@@ -1,7 +1,7 @@
 package ru.ifmo.android_2016.calc;
 
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.HorizontalScrollView;
@@ -11,10 +11,6 @@ import java.text.DecimalFormat;
 import java.text.ParseException;
 
 public class CalculatorActivity extends AppCompatActivity {
-
-    // Decimal format
-    private DecimalFormat df = new DecimalFormat();
-    private char decimalSeparator = df.getDecimalFormatSymbols().getDecimalSeparator();
 
     // Layout
     private static final int[] numberButtonIds = new int[]{
@@ -30,16 +26,135 @@ public class CalculatorActivity extends AppCompatActivity {
             R.id.d9,
             R.id.point
     };
-    private Button[] numbers = new Button[numberButtonIds.length];
-    private Button add, sub, mul, div, clear, sign, percent, eqv;
+    private static final int[] operatorButtonIds = new int[]{
+            R.id.add,
+            R.id.sub,
+            R.id.mul,
+            R.id.div
+    };
+    private Button[] numbers = new Button[numberButtonIds.length],
+            operators = new Button[operatorButtonIds.length];
     private TextView summary, result;
     private HorizontalScrollView summaryScrollview, resultScrollview;
+
+    // Decimal format
+    private DecimalFormat df = new DecimalFormat();
+    private char decimalSeparator = df.getDecimalFormatSymbols().getDecimalSeparator();
 
     // Variables
     private boolean inputState = false;
     private String resultString = "0", summaryString = "";
     private int summaryOperator = 0;
     private double summaryNumber = 0; // left operand
+
+    // Click listeners
+    private View.OnClickListener putNumber = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            char symbol = ((Button) v).getText().charAt(0);
+            if (v.getId() == R.id.point && resultString.indexOf(decimalSeparator) > -1) {
+                return; // Point was already used
+            }
+            if (inputState && resultString.length() >= 16) {
+                return; // Too long number
+            }
+            if (v.getId() == R.id.d0 && resultString.equals("0")) {
+                inputState = true;
+                return; // No more 0s
+            }
+            if (Character.isDigit(symbol) || symbol == decimalSeparator) {
+                if (!inputState) {
+                    resultString = (v.getId() == R.id.point) ? "0" : "";
+                    inputState = true;
+                }
+                resultString += symbol;
+            }
+            updateState();
+        }
+    };
+    private View.OnClickListener putOperator = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            double value = parseDouble(resultString);
+            if (summaryString.isEmpty()) {
+                summaryString = String.valueOf(value);
+                summaryNumber = value;
+            } else if (inputState) {
+                summaryNumber = calcOperator(summaryOperator, summaryNumber, value);
+                summaryString += " " + ((Button) findViewById(summaryOperator)).getText() + " " + String.valueOf(value);
+                resultString = df.format(summaryNumber);
+            }
+            summaryOperator = v.getId();
+            inputState = false;
+            updateState();
+        }
+    };
+    private View.OnClickListener deleteNumber = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            if (inputState && resultString.length() > (resultString.charAt(0) == '-' ? 2 : 1)) {
+                resultString = resultString.substring(0, resultString.length() - 1);
+            } else {
+                resultString = "0";
+                inputState = false;
+            }
+            updateState();
+        }
+    };
+    private View.OnLongClickListener clearInput = new View.OnLongClickListener() {
+        @Override
+        public boolean onLongClick(View v) {
+            summaryNumber = 0;
+            inputState = false;
+            resultString = "0";
+            summaryString = "";
+            summaryOperator = 0;
+            updateState();
+            return true;
+        }
+    };
+    private View.OnClickListener changeSign = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            double value = parseDouble(resultString);
+            if (value != 0) {
+                resultString = df.format(-value);
+                updateState();
+            }
+        }
+    };
+    private View.OnClickListener putPercent = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            double percentValue = parseDouble(resultString) * 0.01;
+            if (summaryString.isEmpty()) {
+                resultString = df.format(percentValue);
+            } else {
+                summaryNumber = calcOperator(summaryOperator, summaryNumber, summaryNumber * percentValue);
+                summaryOperator = 0;
+                summaryString = "";
+                resultString = df.format(summaryNumber);
+            }
+            inputState = false;
+            updateState();
+        }
+    };
+    private View.OnClickListener calculate = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            if (summaryString.isEmpty()) {
+                return;
+            } else {
+                double value = parseDouble(resultString);
+                summaryNumber = calcOperator(summaryOperator, summaryNumber, value);
+                resultString = df.format(summaryNumber);
+            }
+            summaryOperator = 0;
+            summaryString = "";
+            inputState = false;
+            updateState();
+        }
+    };
 
     private void updateState() {
         String operator = (summaryOperator != 0 ? ((Button) findViewById(summaryOperator)).getText().toString() : "");
@@ -79,23 +194,19 @@ public class CalculatorActivity extends AppCompatActivity {
         df.setGroupingUsed(false);
         df.setMaximumFractionDigits(64);
 
-        add = (Button) findViewById(R.id.add);
-        add.setOnClickListener(putOperator);
-        sub = (Button) findViewById(R.id.sub);
-        sub.setOnClickListener(putOperator);
-        mul = (Button) findViewById(R.id.mul);
-        mul.setOnClickListener(putOperator);
-        div = (Button) findViewById(R.id.div);
-        div.setOnClickListener(putOperator);
+        for (int i = 0; i < operatorButtonIds.length; i++) {
+            operators[i] = (Button) findViewById(operatorButtonIds[i]);
+            operators[i].setOnClickListener(putOperator);
+        }
 
-        clear = (Button) findViewById(R.id.clear);
+        Button clear = (Button) findViewById(R.id.clear);
         clear.setOnClickListener(deleteNumber);
         clear.setOnLongClickListener(clearInput);
-        sign = (Button) findViewById(R.id.sign);
+        Button sign = (Button) findViewById(R.id.sign);
         sign.setOnClickListener(changeSign);
-        percent = (Button) findViewById(R.id.percent);
+        Button percent = (Button) findViewById(R.id.percent);
         percent.setOnClickListener(putPercent);
-        eqv = (Button) findViewById(R.id.eqv);
+        Button eqv = (Button) findViewById(R.id.eqv);
         eqv.setOnClickListener(calculate);
 
         for (int i = 0; i < numberButtonIds.length; i++) {
@@ -114,157 +225,23 @@ public class CalculatorActivity extends AppCompatActivity {
         updateState();
     }
 
-    View.OnClickListener putNumber = new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            char symbol = ((Button) v).getText().charAt(0);
-            if (v.getId() == R.id.point && resultString.indexOf(decimalSeparator) > -1) {
-                return; // Point was already used
-            }
-            if (inputState && resultString.length() >= 16) {
-                return; // Too long number
-            }
-            if (v.getId() == R.id.d0 && resultString.equals("0")) {
-                inputState = true;
-                return; // No more 0s
-            }
-            if (Character.isDigit(symbol) || symbol == decimalSeparator) {
-                if (!inputState) {
-                    resultString = (v.getId() == R.id.point) ? "0" : "";
-                    inputState = true;
-                }
-                resultString += symbol;
-            }
-            updateState();
+    private double calcOperator(int operatorId, double left, double right) {
+        switch (operatorId) {
+            case R.id.add:
+                left += right;
+                break;
+            case R.id.sub:
+                left -= right;
+                break;
+            case R.id.mul:
+                left *= right;
+                break;
+            case R.id.div:
+                left /= right;
+                break;
         }
-    };
-
-    View.OnClickListener putOperator = new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            double value = parseDouble(resultString);
-            if (summaryString.isEmpty()) {
-                summaryString = resultString;
-                summaryNumber = value;
-            } else if (inputState) {
-                switch (summaryOperator) {
-                    case R.id.add:
-                        summaryNumber += value;
-                        break;
-                    case R.id.sub:
-                        summaryNumber -= value;
-                        break;
-                    case R.id.mul:
-                        summaryNumber *= value;
-                        break;
-                    case R.id.div:
-                        summaryNumber /= value;
-                        break;
-                }
-                summaryString += " " + ((Button) findViewById(summaryOperator)).getText() + " " + resultString;
-                resultString = df.format(summaryNumber);
-            }
-            summaryOperator = v.getId();
-            inputState = false;
-            updateState();
-        }
-    };
-
-    View.OnClickListener deleteNumber = new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            if (inputState && resultString.length() > 1) {
-                resultString = resultString.substring(0, resultString.length() - 1);
-            } else {
-                resultString = "0";
-                inputState = false;
-            }
-            updateState();
-        }
-    };
-
-    View.OnLongClickListener clearInput = new View.OnLongClickListener() {
-        @Override
-        public boolean onLongClick(View v) {
-            summaryNumber = 0;
-            inputState = false;
-            resultString = "0";
-            summaryString = "";
-            summaryOperator = 0;
-            updateState();
-            return true;
-        }
-    };
-
-    View.OnClickListener changeSign = new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            if (!resultString.equals("0")) {
-                resultString = df.format(-parseDouble(resultString));
-                updateState();
-            }
-        }
-    };
-
-    View.OnClickListener putPercent = new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            double percentValue = parseDouble(resultString) * 0.01;
-            if (summaryString.isEmpty()) {
-                resultString = df.format(percentValue);
-            } else {
-                switch (summaryOperator) {
-                    case R.id.add:
-                        summaryNumber += summaryNumber * percentValue;
-                        break;
-                    case R.id.sub:
-                        summaryNumber -= summaryNumber * percentValue;
-                        break;
-                    case R.id.mul:
-                        summaryNumber *= summaryNumber * percentValue;
-                        break;
-                    case R.id.div:
-                        summaryNumber /= summaryNumber * percentValue;
-                        break;
-                }
-                summaryOperator = 0;
-                summaryString = "";
-                resultString = df.format(summaryNumber);
-            }
-            inputState = false;
-            updateState();
-        }
-    };
-
-    View.OnClickListener calculate = new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            if (summaryString.isEmpty()) {
-                return;
-            } else {
-                double value = parseDouble(resultString);
-                switch (summaryOperator) {
-                    case R.id.add:
-                        summaryNumber += value;
-                        break;
-                    case R.id.sub:
-                        summaryNumber -= value;
-                        break;
-                    case R.id.mul:
-                        summaryNumber *= value;
-                        break;
-                    case R.id.div:
-                        summaryNumber /= value;
-                        break;
-                }
-                resultString = df.format(summaryNumber);
-            }
-            summaryOperator = 0;
-            summaryString = "";
-            inputState = false;
-            updateState();
-        }
-    };
+        return left;
+    }
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
