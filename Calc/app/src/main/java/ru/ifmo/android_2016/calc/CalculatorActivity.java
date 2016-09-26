@@ -13,11 +13,11 @@ import java.text.ParseException;
 public class CalculatorActivity extends AppCompatActivity {
 
     // Decimal format
-    DecimalFormat df = new DecimalFormat();
-    char decimalSeparator = df.getDecimalFormatSymbols().getDecimalSeparator();
+    private DecimalFormat df = new DecimalFormat();
+    private char decimalSeparator = df.getDecimalFormatSymbols().getDecimalSeparator();
 
     // Layout
-    int[] numberButtonIds = new int[]{
+    private static final int[] numberButtonIds = new int[]{
             R.id.d0,
             R.id.d1,
             R.id.d2,
@@ -30,16 +30,16 @@ public class CalculatorActivity extends AppCompatActivity {
             R.id.d9,
             R.id.point
     };
-    Button[] numbers = new Button[numberButtonIds.length];
-    Button add, sub, mul, div, clear, sign, percent, eqv;
-    TextView summary, result;
-    HorizontalScrollView summaryScrollview, resultScrollview;
+    private Button[] numbers = new Button[numberButtonIds.length];
+    private Button add, sub, mul, div, clear, sign, percent, eqv;
+    private TextView summary, result;
+    private HorizontalScrollView summaryScrollview, resultScrollview;
 
     // Variables
-    boolean inputState = false;
-    String resultString = "0", summaryString = "";
-    int summaryOperator = 0;
-    double summaryNumber = 0; // left operand
+    private boolean inputState = false;
+    private String resultString = "0", summaryString = "";
+    private int summaryOperator = 0;
+    private double summaryNumber = 0; // left operand
 
     private void updateState() {
         String operator = (summaryOperator != 0 ? ((Button) findViewById(summaryOperator)).getText().toString() : "");
@@ -142,22 +142,23 @@ public class CalculatorActivity extends AppCompatActivity {
     View.OnClickListener putOperator = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
+            double value = parseDouble(resultString);
             if (summaryString.isEmpty()) {
                 summaryString = resultString;
-                summaryNumber = parseDouble(resultString);
+                summaryNumber = value;
             } else if (inputState) {
                 switch (summaryOperator) {
                     case R.id.add:
-                        summaryNumber += parseDouble(resultString);
+                        summaryNumber += value;
                         break;
                     case R.id.sub:
-                        summaryNumber -= parseDouble(resultString);
+                        summaryNumber -= value;
                         break;
                     case R.id.mul:
-                        summaryNumber *= parseDouble(resultString);
+                        summaryNumber *= value;
                         break;
                     case R.id.div:
-                        summaryNumber /= parseDouble(resultString);
+                        summaryNumber /= value;
                         break;
                 }
                 summaryString += " " + ((Button) findViewById(summaryOperator)).getText() + " " + resultString;
@@ -241,18 +242,19 @@ public class CalculatorActivity extends AppCompatActivity {
             if (summaryString.isEmpty()) {
                 return;
             } else {
+                double value = parseDouble(resultString);
                 switch (summaryOperator) {
                     case R.id.add:
-                        summaryNumber += parseDouble(resultString);
+                        summaryNumber += value;
                         break;
                     case R.id.sub:
-                        summaryNumber -= parseDouble(resultString);
+                        summaryNumber -= value;
                         break;
                     case R.id.mul:
-                        summaryNumber *= parseDouble(resultString);
+                        summaryNumber *= value;
                         break;
                     case R.id.div:
-                        summaryNumber /= parseDouble(resultString);
+                        summaryNumber /= value;
                         break;
                 }
                 resultString = df.format(summaryNumber);
